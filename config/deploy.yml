@@ -1,0 +1,65 @@
+<% require "dotenv"; Dotenv.load(".env") %>
+service: hostedgpt
+image: <%= ENV["KAMAL_REGISTRY_USER"] %>/hostedgpt
+
+servers:
+  web:
+    - <%= ENV["KAMAL_HOST"] %>
+
+proxy:
+  ssl: true
+  host: <%= ENV["KAMAL_HOST"] %>
+  app_port: 8080
+
+registry:
+  server: <%= ENV["KAMAL_REGISTRY_SERVER"] %>
+  username: <%= ENV["KAMAL_REGISTRY_USER"] %>
+  password:
+    - KAMAL_REGISTRY_PASSWORD
+
+env:
+  secret:
+    - RAILS_MASTER_KEY
+    - HOSTED_DB_PASSWORD
+    - KAMAL_REGISTRY_PASSWORD
+    - SECRET_KEY_BASE
+    - ACTIVE_RECORD_ENCRYPTION_PRIMARY_KEY
+    - ACTIVE_RECORD_ENCRYPTION_DETERMINISTIC_KEY
+    - ACTIVE_RECORD_ENCRYPTION_KEY_DERIVATION_SALT
+    - DEFAULT_OPENAI_KEY
+    - DEFAULT_ANTHROPIC_KEY
+  clear:
+    RUN_SOLID_QUEUE_IN_PUMA: true
+    HOSTEDGPT_FORCE_SSL: "false"
+    HOSTED_DB_HOST: hostedgpt-db
+    HOSTED_DB_USERNAME: postgres
+    HOSTEDGPT_PRODUCTION_DB: hostedgpt_production
+    RAILS_LOG_LEVEL: debug
+    CONFIGURE_ACTIVE_RECORD_ENCRYPTION_FROM_ENV: true
+    REGISTRATION_FEATURE: <%= ENV["REGISTRATION_FEATURE"] %>
+    PRODUCT_NAME: <%= ENV["PRODUCT_NAME"] %>
+    DEFAULT_LLM_KEYS_FEATURE: <%= ENV["DEFAULT_LLM_KEYS_FEATURE"] %>
+
+volumes:
+  - "hostedgpt_storage:/rails/storage"
+
+asset_path: /rails/public/assets
+
+builder:
+  arch: amd64
+
+ssh:
+  user: <%= ENV["KAMAL_SSH_USER"] %>
+
+accessories:
+  db:
+    image: postgres:16
+    host: <%= ENV["KAMAL_HOST"] %>
+    env:
+      clear:
+        POSTGRES_USER: postgres
+        POSTGRES_DB: hostedgpt_production
+      secret:
+        - POSTGRES_PASSWORD
+    directories:
+      - data:/var/lib/postgresql/data
